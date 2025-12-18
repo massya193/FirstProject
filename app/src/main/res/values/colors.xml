@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="colorBackground">#121212</color> //Фон
+    <color name="colorSurface">#1E1E1E</color> //фон CardView, RecyclerView элементов
+    <color name="colorPrimary">#2D6A4F</color> //кнопки, акценты, активные вкладки
+    <color name="colorAccent">#52B788</color> //иконки, выделения, hover
+    <color name="textPrimary">#FFFFFF</color> //заголовки, основной текст
+    <color name="textSecondary">#B0B0B0</color> //подписи, вспомогательный текст
+    <color name="RedExp">#EF5350</color>//расходы
+    <color name="GreenInc">#66BB6A</color>//доходы
+    <color name="TakePic">#424242</color>//Для фото
+    <color name="Galery">#616161</color>//для галереи
+</resources>
