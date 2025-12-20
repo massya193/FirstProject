@@ -1,90 +1,73 @@
 package com.example.myfinancefinalproject.data.repository
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import com.example.myfinancefinalproject.data.dao.BalanceDao
-import com.example.myfinancefinalproject.data.entity.Balance
 import com.example.myfinancefinalproject.data.dao.ExpenseDao
 import com.example.myfinancefinalproject.data.dao.IncomeDao
-import com.example.myfinancefinalproject.data.dao.UserDao
+import com.example.myfinancefinalproject.data.entity.Balance
 import com.example.myfinancefinalproject.data.entity.Expense
 import com.example.myfinancefinalproject.data.entity.Income
-import com.example.myfinancefinalproject.data.entity.User
-import com.example.myfinancefinalproject.data.repository.FinanceRepository
+import kotlinx.coroutines.flow.Flow
 
-class FinanceRepository(private val balancedao: BalanceDao,
+class FinanceRepository(
+    private val balanceDao: BalanceDao,
     private val expenseDao: ExpenseDao,
-    private val incomeDao: IncomeDao,
-    private val userdao: UserDao
-){
-    //ПОЛЬЗОВАТЕЛЬ
-    suspend fun userExists(userId: Int): Boolean {
-        return userdao.userExists(userId) > 0
-    }
-    suspend fun insertUser(user: User): Long {
-        return userdao.insertUser(user)
-    }
-    suspend fun getPassword(nickname: String): String? {
-        return userdao.getPassword(nickname)
-    }
-    suspend fun nicknameExists(nickname: String): Boolean {
-        return userdao.nicknameExists(nickname) > 0
-    }
-    suspend fun getUserIdByNickname(nickname: String): Int? {
-        return userdao.getUserIdByNickname(nickname)
-    }
-    suspend fun getnickname(userId: Int): String? {
-        return userdao.getNickname(userId)
-    }
-    suspend fun updateUserAvatar(id: Int, path: String) =
-        userdao.updateAvatar(id, path)
-    suspend fun updatePassword(id: Int, newPassword: String) =
-        userdao.updatePassword(id, newPassword)
-    //БАЛАНС
-    suspend fun createUserWithBalance(user: User) {
-        val existingBalance = balancedao.getBalance(user.userId)
-        if (existingBalance == null) {
-            balancedao.insertBalance(Balance(userId = user.userId, total = 0.0))
+    private val incomeDao: IncomeDao
+) {
+
+    // ================= BALANCE =================
+
+    suspend fun ensureBalanceExists(userId: Int) {
+        val existing = balanceDao.getBalanceById(userId)
+        if (existing == null) {
+            balanceDao.insertBalance(
+                Balance(userId = userId, total = 0.0)
+            )
         }
-        userdao.insertUser(user)
     }
 
     suspend fun getBalance(userId: Int): Balance? {
-        return balancedao.getBalanceById(userId)
+        return balanceDao.getBalanceById(userId)
     }
-    suspend fun insertBalance(balance: Balance) {
-        balancedao.insertBalance(balance)
+
+    suspend fun updateBalance(userId: Int, newAmount: Double) {
+        ensureBalanceExists(userId)
+        balanceDao.updateBalance(userId, newAmount)
     }
+
     fun observeBalance(userId: Int): LiveData<Double> {
-        return balancedao.observeBalance(userId)
+        return balanceDao.observeBalance(userId)
     }
-    suspend fun updateBalance(id: Int, newAmount: Double) {
-        ensureBalanceExists(id)
-        balancedao.updateBalance(id, newAmount)
-    }
-    suspend fun ensureBalanceExists(userId: Int) {
-        val existing = balancedao.getBalanceById(userId)
+
+    suspend fun createBalanceForUser(userId: Int) {
+        val existing = balanceDao.getBalanceById(userId)
         if (existing == null) {
-            balancedao.insertBalance(Balance(userId = userId, total = 0.0))
+            balanceDao.insertBalance(
+                Balance(
+                    userId = userId,
+                    total = 0.0
+                )
+            )
         }
     }
 
+    // ================= INCOME =================
 
-    //РАСХОДЫ
-    suspend fun insertExpense(expense: Expense) =
-        expenseDao.insertExpense(expense)
-    fun getTotalExpense(userId: Int): LiveData<Double?> = expenseDao.getTotalExpense(userId)
-
-
-    //ДОХОДЫ
-    suspend fun insertIncome(income: Income) =
+    suspend fun insertIncome(income: Income) {
         incomeDao.insertIncome(income)
-    fun getTotalIncome(userId: Int): LiveData<Double?> = incomeDao.getTotalIncome(userId)
-    suspend fun ensureIncomeExists(userId: Int) {
-        val existing = incomeDao.getIncomeById(userId)
-        if (existing == null) {
-            incomeDao.insertIncome(Income(id = userId,userId=userId, amount = 0.0, date = ""))
-        }
+    }
+
+    fun getIncome(userId: Int): Flow<List<Income>> {
+        return incomeDao.getIncome(userId)
+    }
+
+    // ================= EXPENSE =================
+
+    suspend fun insertExpense(expense: Expense) {
+        expenseDao.insertExpense(expense)
+    }
+
+    fun getExpenses(userId: Int): Flow<List<Expense>> {
+        return expenseDao.getExpenses(userId)
     }
 }
-

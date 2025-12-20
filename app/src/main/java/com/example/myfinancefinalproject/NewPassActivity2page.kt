@@ -9,27 +9,32 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.myfinancefinalproject.data.database.DatabaseProvider
 import com.example.myfinancefinalproject.data.repository.FinanceRepository
+import com.example.myfinancefinalproject.data.repository.UserRepository
 import com.example.myfinancefinalproject.viewmodel.FinanceViewModel
 import com.example.myfinancefinalproject.viewmodel.FinanceViewModelFactory
+import com.example.myfinancefinalproject.viewmodel.UserViewModel
+import com.example.myfinancefinalproject.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
 import kotlin.getValue
 
 class NewPassActivity2page : AppCompatActivity() {
-    private val viewModel: FinanceViewModel by viewModels {
-        val userId = UserPreferences.getCurrentUser(this)
+    private val factory by lazy {
         val db = DatabaseProvider.getDatabase(this)
-        FinanceViewModelFactory(
-            FinanceRepository(
+        ViewModelFactory(
+            userRepository = UserRepository(db.userDao()),
+            financeRepository = FinanceRepository(
                 db.balanceDao(),
                 db.expenseDao(),
                 db.incomeDao(),
-                db.userDao()
             )
         )
     }
+    private val userViewModel: UserViewModel by viewModels { factory }
+    private val financeViewModel: FinanceViewModel by viewModels { factory }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -40,7 +45,7 @@ class NewPassActivity2page : AppCompatActivity() {
         button.setOnClickListener {
             lifecycleScope.launch {
                 if (userId != -1) {
-                    viewModel.updatePassword(userId,newpass.text.toString())
+                    userViewModel.updatePassword(newpass.text.toString())
                 }
             }
             val intent= Intent(this@NewPassActivity2page, WelcomeActivity::class.java)

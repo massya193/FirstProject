@@ -22,8 +22,11 @@ import com.example.myfinancefinalproject.data.database.DatabaseProvider
 import com.example.myfinancefinalproject.data.entity.Balance
 import com.example.myfinancefinalproject.data.entity.User
 import com.example.myfinancefinalproject.data.repository.FinanceRepository
+import com.example.myfinancefinalproject.data.repository.UserRepository
 import com.example.myfinancefinalproject.viewmodel.FinanceViewModel
 import com.example.myfinancefinalproject.viewmodel.FinanceViewModelFactory
+import com.example.myfinancefinalproject.viewmodel.UserViewModel
+import com.example.myfinancefinalproject.viewmodel.ViewModelFactory
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
 import java.io.File
@@ -32,19 +35,19 @@ import kotlin.getValue
 
 class RegActivity : AppCompatActivity() {
 
-    private val viewModel: FinanceViewModel by viewModels {
-        val userId = UserPreferences.getCurrentUser(this)
+    private val factory by lazy {
         val db = DatabaseProvider.getDatabase(this)
-        FinanceViewModelFactory(
-            FinanceRepository(
+        ViewModelFactory(
+            userRepository = UserRepository(db.userDao()),
+            financeRepository = FinanceRepository(
                 db.balanceDao(),
                 db.expenseDao(),
                 db.incomeDao(),
-                db.userDao()
             )
         )
     }
-
+    private val userViewModel: UserViewModel by viewModels { factory }
+    private val financeViewModel: FinanceViewModel by viewModels { factory }
     private lateinit var cameraLauncher: ActivityResultLauncher<Uri>
     private lateinit var galleryLauncher: ActivityResultLauncher<String>
 
@@ -91,12 +94,8 @@ class RegActivity : AppCompatActivity() {
                 nickname = nickname.text.toString(),
                 avatarPath = avatarPath   // 👈 теперь переменная реально существует
             )
-
-            viewModel.insertUser(newUser) { userId ->
-                lifecycleScope.launch {
-                    viewModel.insertBalance(Balance(userId = userId.toInt(), total = 0.0))
-                }
-
+            userViewModel.register(newUser) { userId ->
+                UserPreferences.saveUserId(this, userId.toInt())
                 Toast.makeText(this, "Регистрация успешна", Toast.LENGTH_SHORT).show()
                 startActivity(Intent(this, WelcomeActivity::class.java))
                 finish()

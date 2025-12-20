@@ -13,8 +13,11 @@ import androidx.activity.viewModels
 import androidx.fragment.app.viewModels
 import com.example.myfinancefinalproject.data.database.DatabaseProvider
 import com.example.myfinancefinalproject.data.repository.FinanceRepository
+import com.example.myfinancefinalproject.data.repository.UserRepository
 import com.example.myfinancefinalproject.viewmodel.FinanceViewModel
 import com.example.myfinancefinalproject.viewmodel.FinanceViewModelFactory
+import com.example.myfinancefinalproject.viewmodel.UserViewModel
+import com.example.myfinancefinalproject.viewmodel.ViewModelFactory
 import kotlin.getValue
 
 class MainActivity : AppCompatActivity() {
@@ -22,24 +25,29 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tabHistory: View
     private lateinit var tabReport: View
     private lateinit var tabSettings: View
-    private val viewModel: FinanceViewModel by viewModels {
-        val userId=UserPreferences.getCurrentUser(this)
-
-        val db=DatabaseProvider.getDatabase(this)
-        FinanceViewModelFactory(
-            FinanceRepository(
+    private val factory by lazy {
+        val db = DatabaseProvider.getDatabase(this)
+        ViewModelFactory(
+            userRepository = UserRepository(db.userDao()),
+            financeRepository = FinanceRepository(
                 db.balanceDao(),
                 db.expenseDao(),
                 db.incomeDao(),
-                db.userDao()
             )
         )
     }
+    private val userViewModel: UserViewModel by viewModels { factory }
+    private val financeViewModel: FinanceViewModel by viewModels { factory }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        val userId=UserPreferences.getCurrentUser(this)
+        val userId = UserPreferences.getUserId(this)
+        if (userId == null) {
+            finish()
+            return
+        }
+        userViewModel.loadUserById(userId)
         tabHome = findViewById(R.id.tabHome)
         tabHistory = findViewById(R.id.tabHistory)
         tabReport = findViewById(R.id.tabReport)

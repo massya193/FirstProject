@@ -11,110 +11,78 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.example.myfinancefinalproject.data.database.DatabaseProvider
 import com.example.myfinancefinalproject.data.repository.FinanceRepository
+import com.example.myfinancefinalproject.data.repository.UserRepository
 import com.example.myfinancefinalproject.viewmodel.FinanceViewModel
 import com.example.myfinancefinalproject.viewmodel.FinanceViewModelFactory
+import com.example.myfinancefinalproject.viewmodel.UserViewModel
+import com.example.myfinancefinalproject.viewmodel.ViewModelFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.time.delay
 
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
-    private val viewModel: FinanceViewModel by viewModels {
-        val userId=UserPreferences.getCurrentUser(requireContext())
-        val db=DatabaseProvider.getDatabase(requireContext())
-        FinanceViewModelFactory(
-            FinanceRepository(
+
+    // ---------- FACTORY ----------
+    private val factory by lazy {
+        val db = DatabaseProvider.getDatabase(requireContext())
+        ViewModelFactory(
+            userRepository = UserRepository(db.userDao()),
+            financeRepository = FinanceRepository(
                 db.balanceDao(),
                 db.expenseDao(),
                 db.incomeDao(),
-                db.userDao()
             )
         )
-    } // хуйня для вызова репозитория,для работы с ним
+    }
 
+    private val userViewModel: UserViewModel by viewModels { factory }
+    private val financeViewModel: FinanceViewModel by viewModels { factory }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val nickname = UserPreferences.getCurrentUser(requireContext())
-        val Baltext=view.findViewById<TextView>(R.id.Baltext)
-        val incval=view.findViewById<TextView>(R.id.incVal)
-        val expval=view.findViewById<TextView>(R.id.expValue)
-        viewModel.getUserIdByNickname(nickname.toString()) { userId ->
-            if (userId == null) return@getUserIdByNickname
-            viewModel.balance.observe(viewLifecycleOwner) { balance ->
-                Baltext.text = balance.toString()
+        val currentUserId = UserPreferences.getUserId(requireContext())
+        if (currentUserId != null) {
+            userViewModel.loadUserById(currentUserId)
+        }
+        val balText = view.findViewById<TextView>(R.id.Baltext)
+        val incText = view.findViewById<TextView>(R.id.incVal)
+        val expText = view.findViewById<TextView>(R.id.expValue)
+        val btnIncome = view.findViewById<Button>(R.id.buttonAddIncome)
+        val btnExpense = view.findViewById<Button>(R.id.buttonRemoveBalance)
+        userViewModel.user.observe(viewLifecycleOwner) { user ->
+            financeViewModel.setUserId(user.userId)
+        }
+        financeViewModel.balance.observe(viewLifecycleOwner) {
+            balText.text = it.toString()
+        }
+        lifecycleScope.launchWhenStarted {
+            financeViewModel.income.collect { list ->
+                incText.text = list.sumOf { it.amount }.toString()
             }
+        }
 
-            viewModel.expenses.observe(viewLifecycleOwner) { expenses ->
-                expval.text = expenses.toString()
-            }
-            viewModel.income.observe(viewLifecycleOwner) { incomes ->
-                incval.text = incomes.toString()
-            }
-            viewModel.loadBalance(userId)
-            viewModel.observeExpense(userId)
-            viewModel.observeIncome(userId)
-            Log.d("DEBUG_USER", "Current userId = $userId")
-            lifecycleScope.launch {
-                viewModel.loadBalance(userId)
+        lifecycleScope.launchWhenStarted {
+            financeViewModel.expenses.collect { list ->
+                expText.text = list.sumOf { it.amount }.toString()
             }
         }
-        val btnSpent = view.findViewById<Button>(R.id.buttonRemoveBalance)
-        val btnIncome=view.findViewById<Button>(R.id.buttonAddIncome)
-        val BalText=view.findViewById<TextView>(R.id.Baltext)
-        val Extext=view.findViewById<TextView>(R.id.expValue)
-        val Intext=view.findViewById<TextView>(R.id.incVal)
-        btnSpent.setOnClickListener {
-            // Создаём панель и передаём, что делать при сохранении
-            val sheet = SpentBottomSheet { amount, category, note, data ->
-                val currentbalance = viewModel.balance.value ?: 0.0
-                if (currentbalance >= amount) {
-                    viewModel.getUserIdByNickname(nickname.toString()) { userId ->
-                        if (userId == null) return@getUserIdByNickname
-                        viewModel.addExpense(userId, amount.toDouble(), category, data.toString())
-                        lifecycleScope.launch {
-                            viewModel.updateBalance(userId, -amount.toDouble())
-                            viewModel.observeExpense(userId)
-                                .observe(viewLifecycleOwner) { totalExpense ->
-                                    Extext.text = totalExpense?.toString()
-                                }
-                            viewModel.observeBalance(userId).observe(viewLifecycleOwner) { total ->
-                                BalText.text = total?.toString()
-                            }
-                        }
-                    }
-                }
-                else{
-                    Toast.makeText(requireContext(), "You dont have enought money", Toast.LENGTH_SHORT).show()
-                }
-                Toast.makeText(requireContext(), "Expenses: $amount₽  ($category)", Toast.LENGTH_SHORT).show()
-            }
-            // Показываем панель на экране
-            sheet.show(parentFragmentManager, "spentBottomSheet")
-        }
+
         btnIncome.setOnClickListener {
-            // Создаём панель и передаём, что делать при сохранении
             val sheet = IncomeBottomSheet { amount, note, date ->
-                viewModel.getUserIdByNickname(nickname.toString()) { userId ->
-                    if (userId == null) return@getUserIdByNickname
-                    viewModel.addIncome(userId, amount.toDouble(), date.toString())
-                    lifecycleScope.launch {
-                        viewModel.updateBalance(userId, +amount.toDouble())
-                        viewModel.observeIncome(userId).observe(viewLifecycleOwner) { totalIncome ->
-                            Log.d("TEST", "INCOME = $totalIncome")
-                            Intext.text = totalIncome?.toString()
-                        }
-                        viewModel.observeBalance(userId).observe(viewLifecycleOwner) { total ->
-                            BalText.text = total?.toString()
-                        }
-                    }
-                }
-                Toast.makeText(requireContext(), "Added to balance: $amount₽", Toast.LENGTH_SHORT)
-                    .show()
+                financeViewModel.addIncome(amount.toDouble(), date)
             }
-            // Показываем панель на экране
-            sheet.show(parentFragmentManager, "incometBottomSheet")
+            sheet.show(parentFragmentManager, "incomeBottomSheet")
         }
+
+        btnExpense.setOnClickListener {
+            val sheet = SpentBottomSheet { amount, category, note, date ->
+                financeViewModel.addExpense(amount.toDouble(), category, date)
+            }
+            sheet.show(parentFragmentManager, "expenseBottomSheet")
+        }
+            //TODO НЕ РАБОТАЮТ КНОПКИ ДОБАВЛЕНИЯ И УБЫТКОВ,НЕ МЕНЯЮТСЯ ЗНАЧЕНИЯ ЕСЛИ БЫТЬ ТОЧНЕЕ
     }
 }
+
 

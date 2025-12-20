@@ -8,14 +8,15 @@ import androidx.room.Update
 import androidx.room.Delete
 import com.example.myfinancefinalproject.data.entity.Balance
 import com.example.myfinancefinalproject.data.entity.Expense
+import kotlinx.coroutines.flow.Flow
+
 @Dao
 interface ExpenseDao {
     @Insert //вставить запись в таблицу expense
     suspend fun insertExpense(expense: Expense) // suspend-функция вызывается параллельно программе
 
-    @Query("SELECT SUM(amount) FROM expenses WHERE userId = :userId")
-    fun getTotalExpense(userId: Int): LiveData<Double?>
-
+    @Query("SELECT * FROM expenses WHERE userId = :userId")
+    fun getExpenses(userId: Int): Flow<List<Expense>>
     @Query("SELECT * FROM expenses WHERE category= :category")// выбрать категорию
     suspend fun getExpensesByCategory(category:String):List<Expense>
 

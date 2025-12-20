@@ -11,135 +11,97 @@ import com.example.myfinancefinalproject.data.entity.Expense
 import com.example.myfinancefinalproject.data.entity.Income
 import com.example.myfinancefinalproject.data.entity.User
 import com.example.myfinancefinalproject.data.repository.FinanceRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 
 
 import kotlinx.coroutines.launch
 
 
-class FinanceViewModel(private val repository: FinanceRepository) : ViewModel() {
+class FinanceViewModel(
+    private val repository: FinanceRepository
+) : ViewModel() {
 
-    private val _balance = MutableLiveData<Double>()
-    val balance: LiveData<Double> get() = _balance
-    private val _expenses = MutableLiveData<Double>()
-    val expenses: LiveData<Double> get() = _expenses
+    // ================= USER ID =================
 
-    private val _income = MutableLiveData<Double>()
-    val income: LiveData<Double> get() = _income
+    private val _userId = MutableStateFlow<Int?>(null)
 
-    //БАЛАНС
-    // Загружаем баланс при старте
-    fun loadBalance(userId: Int) {
-        viewModelScope.launch {
-            repository.ensureBalanceExists(userId)
-            val balanceEntity = repository.getBalance(userId)?.total ?: 0.0
-            _balance.postValue(balanceEntity)
+    fun setUserId(id: Int) {
+        _userId.value = id
+    }
+
+    // ================= BALANCE =================
+
+    val balance: LiveData<Double> = liveData {
+        _userId.filterNotNull().collect { id ->
+            repository.ensureBalanceExists(id)
+            emit(repository.getBalance(id)?.total ?: 0.0)
         }
     }
 
-    suspend fun getBalance(userId: Int): Balance? {
-        return repository.getBalance(userId)
-    }
-    fun createUserWithBalance(user: User) {
+    fun updateBalance(delta: Double) {
+        val id = _userId.value ?: return
         viewModelScope.launch {
-            repository.createUserWithBalance(user)
-        }
-    }
-    fun observeBalance(userId: Int): LiveData<Double> {
-        return repository.observeBalance(userId)
-    }
-
-    // Добавляем или вычитаем деньги
-    fun updateBalance(userId: Int, delta: Double) {
-        viewModelScope.launch {
-            val current = repository.getBalance(userId)?.total ?: 0.0
-            var newAmount = current + delta
-            repository.updateBalance(userId, newAmount)
-            _balance.postValue(newAmount)
-        }
-    }
-    fun insertBalance(balance: Balance) {
-        viewModelScope.launch {
-            repository.insertBalance(balance)
+            val current = repository.getBalance(id)?.total ?: 0.0
+            val newAmount = current + delta
+            repository.updateBalance(id, newAmount)
         }
     }
 
+    // ================= INCOME =================
 
-    //РАСХОДЫ
-    fun addExpense(userId: Int, amount: Double, category: String, data: String) {
+    val income = _userId
+        .filterNotNull()
+        .flatMapLatest { id ->
+            repository.getIncome(id)
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyList()
+        )
+
+    fun addIncome(amount: Double, date: String) {
+        val id = _userId.value ?: return
         viewModelScope.launch {
-            val expense = Expense(
-                userId = userId,
-                category = category,
-                amount = amount,
-                date = data
+            repository.insertIncome(
+                Income(
+                    userId = id,
+                    amount = amount,
+                    date = date
+                )
             )
-            repository.insertExpense(expense)
         }
     }
 
-    fun observeExpense(userId: Int) = repository.getTotalExpense(userId)
+    // ================= EXPENSES =================
 
+    val expenses = _userId
+        .filterNotNull()
+        .flatMapLatest { id ->
+            repository.getExpenses(id)
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyList()
+        )
 
-    //ПОЛЬЗОВАТЕЛЬ
-    fun insertUser(user: User, callback: (Long) -> Unit) {
+    fun addExpense(amount: Double, category: String, date: String) {
+        val id = _userId.value ?: return
         viewModelScope.launch {
-            val id = repository.insertUser(user)
-            callback(id)
-        }
-    }
-    fun getUserIdByNickname(nickname: String, callback: (Int?) -> Unit) {
-        viewModelScope.launch {
-            callback(repository.getUserIdByNickname(nickname))
-        }
-    }
-    fun userExists(userId: Int, callback: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            val exists = repository.userExists(userId)
-            callback(exists)
-        }
-    }
-    fun nicknameExists(nickname: String,callback: (Boolean?) -> Unit) {
-        viewModelScope.launch {
-            val exists= repository.nicknameExists(nickname)
-            callback(exists)
-        }
-    }
-    fun getPassword(nickname: String, callback: (String?) -> Unit) {
-        viewModelScope.launch {
-            val password = repository.getPassword(nickname)
-            callback(password)
-        }
-    }
-
-    fun getNickname(userId: Int, callback: (String?) -> Unit) {
-        viewModelScope.launch {
-            callback(repository.getnickname(userId))
-        }
-    }
-
-    fun updateUserAvatar(id: Int, path: String) {
-        viewModelScope.launch {
-            repository.updateUserAvatar(id, path)
-        }
-    }
-
-    fun updatePassword(id: Int, newPassword: String) {
-        viewModelScope.launch {
-            repository.updatePassword(id, newPassword)
-        }
-    }
-
-    //ДОХОДЫ
-    fun addIncome(userId: Int, amount: Double, data: String) {
-        viewModelScope.launch {
-            val income = Income(
-                userId = userId,
-                amount = amount,
-                date = data,
+            repository.insertExpense(
+                Expense(
+                    userId = id,
+                    category = category,
+                    amount = amount,
+                    date = date
+                )
             )
-            repository.insertIncome(income)
         }
     }
-
-    fun observeIncome(userId: Int) = repository.getTotalIncome(userId)
 }
+

@@ -8,6 +8,7 @@ import androidx.room.Update
 import androidx.room.Delete
 import com.example.myfinancefinalproject.data.entity.Balance
 import com.example.myfinancefinalproject.data.entity.Income
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface IncomeDao{
@@ -15,9 +16,8 @@ interface IncomeDao{
     suspend fun insertIncome(income: Income)
 
 
-    @Query("SELECT SUM(amount) FROM income WHERE userId = :userId")
-    fun getTotalIncome(userId: Int): LiveData<Double?>
-
+    @Query("SELECT * FROM income WHERE userId = :userId")
+    fun getIncome(userId: Int): Flow<List<Income>>
     @Query("SELECT * FROM income WHERE id = :userId LIMIT 1")//Запрос прибыли,лимит 1-получение одного результата
     suspend fun getIncomeById(userId: Int): Income?
     @Update
