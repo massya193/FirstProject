@@ -29,7 +29,7 @@ class UserViewModel(
                 val userId = userRepository.getUserIdByNickname(nickname)
                 if (userId != null) {
                     _user.postValue(userRepository.getUserById(userId))
-                    onResult(userId)   // ✅ отдаём ID напрямую
+                    onResult(userId)   // отдаём ID напрямую
                 } else {
                     onResult(null)
                 }

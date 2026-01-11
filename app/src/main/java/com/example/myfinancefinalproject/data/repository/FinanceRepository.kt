@@ -1,6 +1,7 @@
 package com.example.myfinancefinalproject.data.repository
 
-import androidx.lifecycle.LiveData
+import com.example.myfinancefinalproject.HistoryClasses.Operation
+import com.example.myfinancefinalproject.HistoryClasses.OperationType
 import com.example.myfinancefinalproject.data.dao.BalanceDao
 import com.example.myfinancefinalproject.data.dao.ExpenseDao
 import com.example.myfinancefinalproject.data.dao.IncomeDao
@@ -8,6 +9,7 @@ import com.example.myfinancefinalproject.data.entity.Balance
 import com.example.myfinancefinalproject.data.entity.Expense
 import com.example.myfinancefinalproject.data.entity.Income
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 
 class FinanceRepository(
     private val balanceDao: BalanceDao,
@@ -35,9 +37,7 @@ class FinanceRepository(
         balanceDao.updateBalance(userId, newAmount)
     }
 
-    fun observeBalance(userId: Int): LiveData<Double> {
-        return balanceDao.observeBalance(userId)
-    }
+    fun observeBalance(userId: Int) = balanceDao.observeBalance(userId)
 
     suspend fun createBalanceForUser(userId: Int) {
         val existing = balanceDao.getBalanceById(userId)
@@ -51,6 +51,11 @@ class FinanceRepository(
         }
     }
 
+    fun observeBalanceEvents(
+        userId: Long,
+        from: Long,
+        to: Long
+    ) = balanceDao.observeBalanceEvents(userId, from, to)
     // ================= INCOME =================
 
     suspend fun insertIncome(income: Income) {
@@ -61,13 +66,58 @@ class FinanceRepository(
         return incomeDao.getIncome(userId)
     }
 
+    fun observeIncomeCategories(userId: Int): Flow<List<String>> =
+        incomeDao.observeCategories(userId)
+
+    fun observeIncomeSum()=incomeDao.observeTotalIncome()
+
+
     // ================= EXPENSE =================
 
     suspend fun insertExpense(expense: Expense) {
         expenseDao.insertExpense(expense)
     }
+    fun observeExpenseCategories(userId: Int): Flow<List<String>> =
+        expenseDao.observeCategories(userId)
+    fun observeExpenseSum()=expenseDao.observeTotalExpense()
+    // ================= COMBINE =================
 
     fun getExpenses(userId: Int): Flow<List<Expense>> {
         return expenseDao.getExpenses(userId)
     }
+    suspend fun getExpensesByCategory(category: String): List<Expense> {
+        return expenseDao.getExpensesByCategory(category)
+    }
+    fun observeHistory(): kotlinx.coroutines.flow.Flow<List<Operation>> {
+        return kotlinx.coroutines.flow.combine(
+            incomeDao.observeIncome(),
+            expenseDao.observeExpense()
+        ) { incomeList, expenseList ->
+
+            val incomeOps = incomeList.map {
+                Operation(
+                    id = it.id,
+                    amount = it.amount,
+                    category =it.category,
+                    type = OperationType.INCOME,
+                    comment = it.description,
+                    date = it.date
+                )
+            }
+
+            val expenseOps = expenseList.map {
+                Operation(
+                    id = it.id,
+                    amount = it.amount,
+                    category =it.category,
+                    type = OperationType.EXPENSE,
+                    comment = it.description,
+                    date = it.date
+                )
+            }
+
+            (incomeOps + expenseOps).sortedByDescending { it.date }
+        }
+    }
+
 }

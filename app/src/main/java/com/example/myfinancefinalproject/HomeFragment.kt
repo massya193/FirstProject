@@ -8,6 +8,7 @@ import androidx.fragment.app.viewModels
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.myfinancefinalproject.data.database.DatabaseProvider
 import com.example.myfinancefinalproject.data.repository.FinanceRepository
@@ -36,8 +37,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         )
     }
 
-    private val userViewModel: UserViewModel by viewModels { factory }
-    private val financeViewModel: FinanceViewModel by viewModels { factory }
+    private val userViewModel: UserViewModel by activityViewModels { factory }
+    private val financeViewModel: FinanceViewModel by activityViewModels { factory }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -51,10 +52,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val btnIncome = view.findViewById<Button>(R.id.buttonAddIncome)
         val btnExpense = view.findViewById<Button>(R.id.buttonRemoveBalance)
         userViewModel.user.observe(viewLifecycleOwner) { user ->
-            financeViewModel.setUserId(user.userId)
+            val id = user.userId
+            if (id != 0) {
+                financeViewModel.setUserId(id)
+            } else {
+                Log.d("CAT", "user from DB has id=0, skip")
+            }
         }
-        financeViewModel.balance.observe(viewLifecycleOwner) {
-            balText.text = it.toString()
+        lifecycleScope.launchWhenStarted {
+            financeViewModel.balance.collect { value ->
+                balText.text = value.toString()
+            }
         }
         lifecycleScope.launchWhenStarted {
             financeViewModel.income.collect { list ->
@@ -69,19 +77,20 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
 
         btnIncome.setOnClickListener {
-            val sheet = IncomeBottomSheet { amount, note, date ->
-                financeViewModel.addIncome(amount.toDouble(), date)
+            val sheet = IncomeBottomSheet { amount, category, note,date ->
+                financeViewModel.addIncome(amount.toDouble(), category,date,note)
+                financeViewModel.updateBalance(+amount.toDouble())
             }
             sheet.show(parentFragmentManager, "incomeBottomSheet")
         }
 
         btnExpense.setOnClickListener {
             val sheet = SpentBottomSheet { amount, category, note, date ->
-                financeViewModel.addExpense(amount.toDouble(), category, date)
+                financeViewModel.addExpense(amount.toDouble(), category, date,note)
+                financeViewModel.updateBalance(-amount.toDouble())
             }
             sheet.show(parentFragmentManager, "expenseBottomSheet")
         }
-            //TODO НЕ РАБОТАЮТ КНОПКИ ДОБАВЛЕНИЯ И УБЫТКОВ,НЕ МЕНЯЮТСЯ ЗНАЧЕНИЯ ЕСЛИ БЫТЬ ТОЧНЕЕ
     }
 }
 

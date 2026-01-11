@@ -13,7 +13,7 @@ import com.example.myfinancefinalproject.data.entity.User
 
 @Database(
     entities = [Expense::class, Balance::class,Income::class, User::class], //с какой таблицей будем работать
-    version = 13, // версия базы(если меняю что то в таблице нужно менять версию)
+    version = 17, // версия базы(если меняю что то в таблице нужно менять версию)
     exportSchema = false // для создания json файла физически для просмотра
 )
 abstract class MainDataBase : RoomDatabase() {

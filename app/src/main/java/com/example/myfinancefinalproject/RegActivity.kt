@@ -52,7 +52,7 @@ class RegActivity : AppCompatActivity() {
     private lateinit var galleryLauncher: ActivityResultLauncher<String>
 
     private var imageUri: Uri? = null
-    private var avatarPath: String = ""   // 👈 добавляем переменную для хранения пути к фото
+    private var avatarPath: String = ""   //добавляем переменную для хранения пути к фото
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,7 +74,7 @@ class RegActivity : AppCompatActivity() {
             if (uri != null) {
                 imageUri = uri
                 imageView.setImageURI(uri)
-                avatarPath = saveImageToInternalStorage(uri) // 👈 сохраняем путь
+                avatarPath = saveImageToInternalStorage(uri) // сохраняем путь
             }
         }
 
@@ -84,7 +84,7 @@ class RegActivity : AppCompatActivity() {
         ) { success ->
             if (success && imageUri != null) {
                 imageView.setImageURI(imageUri)
-                avatarPath = saveImageToInternalStorage(imageUri!!) // 👈 сохраняем путь
+                avatarPath = saveImageToInternalStorage(imageUri!!) // сохраняем путь
             }
         }
 
@@ -92,7 +92,7 @@ class RegActivity : AppCompatActivity() {
             val newUser = User(
                 password = password.text.toString(),
                 nickname = nickname.text.toString(),
-                avatarPath = avatarPath   // 👈 теперь переменная реально существует
+                avatarPath = avatarPath
             )
             userViewModel.register(newUser) { userId ->
                 UserPreferences.saveUserId(this, userId.toInt())
@@ -103,7 +103,7 @@ class RegActivity : AppCompatActivity() {
         }
     }
 
-    // 💾 сохраняем фото во внутреннее хранилище
+    //сохраняем фото во внутреннее хранилище
     private fun saveImageToInternalStorage(uri: Uri): String {
         return try {
             val inputStream = contentResolver.openInputStream(uri) ?: return ""

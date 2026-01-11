@@ -12,5 +12,6 @@ data class Expense(
     val userId: Int,
     val category: String,
     val amount: Double,
-    val date: String,
+    val date: Long,
+    val description: String?
 )
