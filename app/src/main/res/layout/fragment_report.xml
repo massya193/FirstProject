@@ -7,7 +7,6 @@
     android:background="#0B0B0F"
     android:padding="16dp">
 
-    <!-- ===== Сегмент-переключатель графиков (пилюля) ===== -->
     <LinearLayout
         android:id="@+id/segmentedCharts"
         android:layout_width="0dp"
@@ -56,8 +55,6 @@
             android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
-
-    <!-- ===== “Пилюля” с диапазоном дат (как у тебя на скрине) ===== -->
     <TextView
         android:id="@+id/tvDateRange"
         android:layout_width="wrap_content"
@@ -72,24 +69,16 @@
         android:textSize="14sp"
         app:layout_constraintTop_toBottomOf="@id/segmentedCharts"
         app:layout_constraintStart_toStartOf="parent" />
-
-    <!-- ===== Карточка под график ===== -->
     <FrameLayout
-        android:id="@+id/chartCard"
+        android:id="@+id/chartContainer"
         android:layout_width="0dp"
-        android:layout_height="280dp"
+        android:layout_height="0dp"
         android:layout_marginTop="12dp"
         android:background="@drawable/bg_card"
         android:padding="10dp"
         app:layout_constraintTop_toBottomOf="@id/tvDateRange"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <!-- Контейнер, куда подставляем BalanceChartFragment / IncomeChartFragment... -->
-        <FrameLayout
-            android:id="@+id/chartContainer"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </FrameLayout>
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

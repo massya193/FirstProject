@@ -66,6 +66,9 @@ class UserViewModel(
         }
     }
 
+    suspend fun getNickname(userId: Int): String? {
+        return userRepository.getUserNickname(userId)
+    }
     fun updatePassword(newPassword: String) {
         _user.value?.let { current ->
             viewModelScope.launch {

@@ -22,6 +22,9 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import androidx.lifecycle.map
+import com.example.myfinancefinalproject.data.dto.BalanceEvent
+import com.example.myfinancefinalproject.data.dto.ExpenseDaySum
+import com.example.myfinancefinalproject.data.dto.IncomeDaySum
 import com.github.mikephil.charting.data.Entry
 
 
@@ -69,14 +72,16 @@ class FinanceViewModel(
                 events.forEachIndexed { index, e ->
                     balance += e.delta
                     days += e.date
-                    entries += Entry(index.toFloat(), balance.toFloat())
+                    entries += Entry(index.toFloat(), balance.toFloat()).apply { data=e }
                 }
                 entries to days
             }
             .asLiveData()
     }
-
-//TODO доделай подклчение базы к графику,реши все импорты и надо сделать функцию под balancepoints в repository
+    fun observeBalanceEvents(from: Long, to: Long): LiveData<List<BalanceEvent>> {
+        val uid = _userId.value?.toLong() ?: return MutableLiveData(emptyList())
+        return repository.observeEventsOfBalance(uid, from, to).asLiveData()
+    }
     // ================= INCOME =================
 
     val income = _userId
@@ -111,6 +116,16 @@ class FinanceViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val incomeCount=repository.observeIncomeSum().asLiveData()
+
+    fun observeIncomeChart(from: Long, to: Long): LiveData<List<IncomeDaySum>> {
+        val uid = _userId.value?.toLong() ?: return MutableLiveData(emptyList())
+        return repository.observeIncomeByDay(uid, from, to).asLiveData()
+    }
+
+    fun observeIncomeTransactions(from: Long, to: Long): LiveData<List<Income>> {
+        val uid = _userId.value?.toLong() ?: return MutableLiveData(emptyList())
+        return repository.observeIncomeTransactions(uid, from, to).asLiveData()
+    }
     // ================= EXPENSES =================
 
     val expenses = _userId
@@ -145,6 +160,16 @@ class FinanceViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val expenseCount=repository.observeExpenseSum().asLiveData()
+
+    fun observeExpenseChart(from: Long, to: Long): LiveData<List<ExpenseDaySum>> {
+        val uid = _userId.value?.toLong() ?: return MutableLiveData(emptyList())
+        return repository.observeExpenseByDay(uid, from, to).asLiveData()
+    }
+
+    fun observeExpenseTransactions(from: Long, to: Long): LiveData<List<Expense>> {
+        val uid = _userId.value?.toLong() ?: return MutableLiveData(emptyList())
+        return repository.observeExpenseTransactions(uid, from, to).asLiveData()
+    }
 
     // ================= COMBINE =================
     val history = repository.observeHistory().asLiveData()

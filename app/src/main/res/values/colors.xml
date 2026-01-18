@@ -12,4 +12,5 @@
     <color name="GreenInc">#66BB6A</color>//доходы
     <color name="TakePic">#424242</color>//Для фото
     <color name="Galery">#616161</color>//для галереи
+    <color name="Notusefullbtn">#9AA3B2</color>//для неиспользуемых кнопок
 </resources>

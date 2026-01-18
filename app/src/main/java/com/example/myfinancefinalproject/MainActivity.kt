@@ -7,10 +7,12 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import android.view.View
 import android.widget.Button
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.example.myfinancefinalproject.data.database.DatabaseProvider
 import com.example.myfinancefinalproject.data.repository.FinanceRepository
 import com.example.myfinancefinalproject.data.repository.UserRepository
@@ -18,6 +20,7 @@ import com.example.myfinancefinalproject.viewmodel.FinanceViewModel
 import com.example.myfinancefinalproject.viewmodel.FinanceViewModelFactory
 import com.example.myfinancefinalproject.viewmodel.UserViewModel
 import com.example.myfinancefinalproject.viewmodel.ViewModelFactory
+import kotlinx.coroutines.launch
 import kotlin.getValue
 
 class MainActivity : AppCompatActivity() {
@@ -47,7 +50,12 @@ class MainActivity : AppCompatActivity() {
             finish()
             return
         }
-        userViewModel.loadUserById(userId)
+        val tvUsername = findViewById<TextView>(R.id.Username)
+        lifecycleScope.launch {
+            val nick = userViewModel.getNickname(userId) ?: "Username"
+            tvUsername.text = nick
+        }
+        val titlepage=findViewById<TextView>(R.id.tvTitle)
         tabHome = findViewById(R.id.tabHome)
         tabHistory = findViewById(R.id.tabHistory)
         tabReport = findViewById(R.id.tabReport)
@@ -60,20 +68,23 @@ class MainActivity : AppCompatActivity() {
         tabHome.setOnClickListener {
             replaceFragment(HomeFragment())
             highlightTab(tabHome)
+            titlepage.text="Home"
         }
         tabHistory.setOnClickListener {
             replaceFragment(HistoryFragment())
             highlightTab(tabHistory)
+            titlepage.text="History"
         }
         tabReport.setOnClickListener {
             replaceFragment(ReportFragment())
             highlightTab(tabReport)
+            titlepage.text="Report"
         }
         tabSettings.setOnClickListener {
             replaceFragment(SettingsFragment())
             highlightTab(tabSettings)
+            titlepage.text="Settings"
         }
-
     }
 
     private fun replaceFragment(fragment: Fragment) {

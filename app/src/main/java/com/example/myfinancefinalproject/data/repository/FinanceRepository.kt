@@ -5,6 +5,7 @@ import com.example.myfinancefinalproject.HistoryClasses.OperationType
 import com.example.myfinancefinalproject.data.dao.BalanceDao
 import com.example.myfinancefinalproject.data.dao.ExpenseDao
 import com.example.myfinancefinalproject.data.dao.IncomeDao
+import com.example.myfinancefinalproject.data.dto.BalanceEvent
 import com.example.myfinancefinalproject.data.entity.Balance
 import com.example.myfinancefinalproject.data.entity.Expense
 import com.example.myfinancefinalproject.data.entity.Income
@@ -56,6 +57,11 @@ class FinanceRepository(
         from: Long,
         to: Long
     ) = balanceDao.observeBalanceEvents(userId, from, to)
+
+    fun observeEventsOfBalance(userId: Long, from: Long, to: Long): Flow<List<BalanceEvent>> {
+        return balanceDao.observeBalanceEvents(userId, from, to)
+    }
+
     // ================= INCOME =================
 
     suspend fun insertIncome(income: Income) {
@@ -71,6 +77,12 @@ class FinanceRepository(
 
     fun observeIncomeSum()=incomeDao.observeTotalIncome()
 
+    fun observeIncomeByDay(userId: Long, from: Long, to: Long) =
+        incomeDao.observeIncomeByDay(userId, from, to)
+
+    fun observeIncomeTransactions(userId: Long, from: Long, to: Long) =
+        incomeDao.observeIncomeTransactions(userId, from, to)
+
 
     // ================= EXPENSE =================
 
@@ -80,6 +92,13 @@ class FinanceRepository(
     fun observeExpenseCategories(userId: Int): Flow<List<String>> =
         expenseDao.observeCategories(userId)
     fun observeExpenseSum()=expenseDao.observeTotalExpense()
+
+    fun observeExpenseByDay(userId: Long, from: Long, to: Long) =
+        expenseDao.observeExpenseByDay(userId, from, to)
+
+    fun observeExpenseTransactions(userId: Long, from: Long, to: Long) =
+        expenseDao.observeExpenseTransactions(userId, from, to)
+
     // ================= COMBINE =================
 
     fun getExpenses(userId: Int): Flow<List<Expense>> {

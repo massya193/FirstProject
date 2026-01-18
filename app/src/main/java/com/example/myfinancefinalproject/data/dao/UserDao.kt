@@ -17,7 +17,8 @@ interface UserDao {
     @Query("SELECT COUNT(*) FROM user WHERE userId = :userId")
     suspend fun userExists(userId: Int): Int
 
-
+    @Query("SELECT nickname FROM user WHERE userId = :userId LIMIT 1")
+    suspend fun getUserNickname(userId: Int): String?
     @Query("SELECT userId FROM user WHERE nickname = :nickname LIMIT 1")
     suspend fun getUserIdByNickname(nickname: String): Int?
 

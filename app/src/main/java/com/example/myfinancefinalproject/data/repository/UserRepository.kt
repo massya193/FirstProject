@@ -16,7 +16,7 @@ class UserRepository(
     suspend fun getUserById(id: Int): User? {
         return userDao.getUserById(id)
     }
-
+    suspend fun getUserNickname(userId: Int): String? = userDao.getUserNickname(userId)
     suspend fun getUserIdByNickname(nickname: String): Int? {
         return userDao.getUserIdByNickname(nickname)
     }
